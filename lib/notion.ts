@@ -46,8 +46,8 @@ export async function getBookmarks(
       page_size: pageSize,
       sorts: [
         {
-          property: "Name",
-          direction: "ascending",
+          timestamp: "created_time",
+          direction: "descending",
         },
       ],
     };
