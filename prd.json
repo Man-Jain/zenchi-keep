@@ -1,0 +1,328 @@
+{
+  "project": "Zenchi Keep",
+  "branchName": "ralph/flashcards-pwa",
+  "description": "Flashcard Mode & Daily Notifications for PWA - Review bookmarks with flashcards and receive daily notifications",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Install PWA dependencies",
+      "description": "As a developer, I need to install next-pwa and react-swipeable for PWA functionality.",
+      "acceptanceCriteria": [
+        "Install next-pwa package",
+        "Install react-swipeable package",
+        "Install @types/react-swipeable as dev dependency",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create PWA manifest.json",
+      "description": "As a developer, I need to create the PWA manifest for installability.",
+      "acceptanceCriteria": [
+        "Create public/manifest.json with app name 'Zenchi Keep'",
+        "Set theme color to match pastel theme (sky-100)",
+        "Set display mode to 'standalone'",
+        "Include 192x192 and 512x512 icon paths",
+        "Set start URL to '/'",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Update next.config.ts for PWA",
+      "description": "As a developer, I need to configure Next.js for PWA support.",
+      "acceptanceCriteria": [
+        "Import withPWA from next-pwa",
+        "Add pwa config object with dest, register, skipWaiting options",
+        "Disable PWA in development mode",
+        "Export withPWA(nextConfig)",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add PWA meta tags to root layout",
+      "description": "As a developer, I need to add PWA meta tags for mobile installability.",
+      "acceptanceCriteria": [
+        "Add theme-color meta tag",
+        "Add apple-touch-icon meta tags",
+        "Add viewport meta tag with PWA settings",
+        "Add manifest link tag",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create storage.ts utilities",
+      "description": "As a developer, I need localStorage helpers for client-side tracking.",
+      "acceptanceCriteria": [
+        "Define ReviewState interface with reviewedIds, skippedIds, lastReviewDate, sessionStats",
+        "Define NotificationSettings interface with enabled, schedule, lastNotificationDate",
+        "Implement getReviewState, setReviewState functions",
+        "Implement getNotificationSettings, setNotificationSettings functions",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add getRandomBookmarks to Notion client",
+      "description": "As a developer, I need a function to fetch random bookmarks from Notion.",
+      "acceptanceCriteria": [
+        "Add getRandomBookmarks(count: number, excludeIds?: string[]) function to lib/notion.ts",
+        "Function returns array of random bookmarks",
+        "Function accepts optional excludeIds parameter to avoid repeats",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create random bookmark API route",
+      "description": "As a developer, I need an API endpoint to fetch a random bookmark.",
+      "acceptanceCriteria": [
+        "Create app/api/flashcards/random/route.ts",
+        "GET endpoint accepts optional excludeIds query parameter",
+        "Returns single bookmark with remainingCount",
+        "Uses getRandomBookmarks from lib/notion.ts",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Create useFlashcards hook",
+      "description": "As a developer, I need a hook for flashcard state management.",
+      "acceptanceCriteria": [
+        "Define state: currentBookmark, reviewedCount, skippedCount, loading, error",
+        "Implement fetchRandomBookmark function",
+        "Implement markAsReviewed function updating localStorage",
+        "Implement skipBookmark function updating localStorage",
+        "Implement resetSession function clearing localStorage",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create Flashcard component",
+      "description": "As a user, I want to see bookmark details in a clean card layout.",
+      "acceptanceCriteria": [
+        "Display large bookmark name",
+        "Display URL clearly",
+        "Show type/status badges",
+        "Display favicon",
+        "Add 'Visit Link' button opening in new tab",
+        "Use pastel theme (sky-100, slate-800)",
+        "Card has minimum 60% viewport height on mobile",
+        "Rounded corners (rounded-2xl) with subtle shadow",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create FlashcardControls component",
+      "description": "As a user, I want buttons to mark reviewed or skip bookmarks.",
+      "acceptanceCriteria": [
+        "Skip button on left side",
+        "Mark as Reviewed button on right side",
+        "End Session button",
+        "Open in new tab icon button",
+        "Buttons are touch-friendly (minimum 44x44px)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create SwipeHandler component",
+      "description": "As a mobile user, I want swipe gestures to control flashcards.",
+      "acceptanceCriteria": [
+        "Use react-swipeable library",
+        "Left swipe triggers skipBookmark",
+        "Right swipe triggers markAsReviewed",
+        "Visual feedback during swipe (card follows finger)",
+        "Color change during swipe (red = skip, green = reviewed)",
+        "Haptic feedback on mobile",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create flashcards page",
+      "description": "As a user, I want a dedicated page for flashcard review mode.",
+      "acceptanceCriteria": [
+        "Create app/flashcards/page.tsx with 'use client'",
+        "Uses useFlashcards hook for state management",
+        "Renders Flashcard wrapped with SwipeHandler",
+        "Renders FlashcardControls",
+        "Shows session stats (reviewed/skipped counts)",
+        "Handle loading state with spinner or skeleton",
+        "Handle error state with retry button",
+        "Clean, immersive full-screen layout",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Create notification settings API route",
+      "description": "As a developer, I need an API endpoint for saving notification preferences.",
+      "acceptanceCriteria": [
+        "Create app/api/settings/notifications/route.ts",
+        "GET endpoint retrieves user's notification settings",
+        "POST endpoint saves notification settings",
+        "Auth: Basic API key validation",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Create notification schedule API route",
+      "description": "As a developer, I need an API endpoint for notification scheduling.",
+      "acceptanceCriteria": [
+        "Create app/api/notifications/schedule/route.ts",
+        "Returns next scheduled notification time",
+        "Returns random bookmark preview for notification",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Create useNotifications hook",
+      "description": "As a developer, I need a hook for notification permission and scheduling.",
+      "acceptanceCriteria": [
+        "Implement requestNotificationPermission function",
+        "Implement scheduleNotifications function",
+        "Implement cancelNotifications function",
+        "Implement checkPermissionStatus function",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Create NotificationSettings component",
+      "description": "As a user, I want to configure daily notification times.",
+      "acceptanceCriteria": [
+        "Time picker for custom schedule",
+        "Toggle notifications on/off",
+        "Preview notification button",
+        "Save settings button",
+        "Display current saved settings",
+        "Use pastel theme",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Create settings page",
+      "description": "As a user, I want a settings page for notification preferences.",
+      "acceptanceCriteria": [
+        "Create app/settings/page.tsx",
+        "Renders NotificationSettings component",
+        "Clean, accessible UI",
+        "Use pastel theme",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Add navigation links to home page",
+      "description": "As a user, I want to navigate to flashcards and settings from the home page.",
+      "acceptanceCriteria": [
+        "Add 'Flashcards' button to header",
+        "Add 'Settings' button to header",
+        "Flashcards button links to /flashcards",
+        "Settings button links to /settings",
+        "Buttons use pastel theme styling",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Create PWA service worker",
+      "description": "As a developer, I need a service worker for offline caching and notifications.",
+      "acceptanceCriteria": [
+        "Create lib/pwa/service-worker.ts",
+        "Implement basic offline caching strategy",
+        "Cache bookmark pages and API responses",
+        "Register service worker in root layout",
+        "Add update handling for PWA",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Enhance service worker for notifications",
+      "description": "As a developer, I need the service worker to handle background notifications.",
+      "acceptanceCriteria": [
+        "Add background sync for notifications",
+        "Handle notification clicks to open /flashcards",
+        "Fetch random bookmark when notification triggers",
+        "Schedule next notification after current one",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

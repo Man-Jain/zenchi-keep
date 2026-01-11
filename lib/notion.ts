@@ -147,3 +147,37 @@ export async function getFeaturedBookmarks(): Promise<Bookmark[]> {
 
   return featured;
 }
+
+// Get random bookmarks with optional exclusion list
+export async function getRandomBookmarks(
+  count: number,
+  excludeIds?: string[]
+): Promise<Bookmark[]> {
+  const allBookmarks = await getAllBookmarks();
+  
+  if (allBookmarks.length === 0) {
+    return [];
+  }
+
+  // Filter out excluded IDs if provided
+  const available = excludeIds
+    ? allBookmarks.filter((bookmark) => !excludeIds.includes(bookmark.id))
+    : [...allBookmarks];
+
+  if (available.length === 0) {
+    return [];
+  }
+
+  // Pick random items
+  const random: Bookmark[] = [];
+  const pool = [...available];
+  const actualCount = Math.min(count, pool.length);
+  
+  for (let i = 0; i < actualCount && pool.length > 0; i++) {
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    random.push(pool[randomIndex]);
+    pool.splice(randomIndex, 1); // Remove to avoid duplicates
+  }
+
+  return random;
+}

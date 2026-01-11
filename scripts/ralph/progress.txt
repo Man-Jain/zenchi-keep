@@ -1,0 +1,421 @@
+# Ralph Progress Log
+Started: Mon Jan 12 01:35:02 IST 2026
+---
+
+## [2026-01-12] - US-001
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Installed PWA dependencies: next-pwa (^5.6.0), react-swipeable (^7.0.2), and @types/react-swipeable (^4.3.0) as dev dependency
+- Files changed: package.json, package-lock.json
+- **Learnings for future iterations:**
+  - Packages installed successfully via npm
+  - next-pwa provides PWA functionality for Next.js applications
+  - react-swipeable will be used for swipe gestures in flashcard components
+  - Type definitions are available for react-swipeable via @types/react-swipeable
+---
+
+## [2026-01-12] - US-002
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created PWA manifest.json file at public/manifest.json
+- Configured app name as 'Zenchi Keep'
+- Set theme color to #e0f2fe (sky-100) to match pastel theme
+- Set display mode to 'standalone' for PWA installability
+- Added icon paths for 192x192 and 512x512 sizes (icons to be created later)
+- Set start URL to '/'
+- Files changed: public/manifest.json
+- **Learnings for future iterations:**
+  - PWA manifest.json must be placed in public/ directory for Next.js to serve it
+  - Theme color sky-100 in Tailwind CSS corresponds to hex #e0f2fe
+  - Manifest includes background_color matching the app's background (#f8fafc from globals.css)
+  - Icon files (icon-192x192.png and icon-512x512.png) need to be created in public/ directory for full PWA functionality
+---
+
+## [2026-01-12] - US-003
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Updated next.config.ts to configure Next.js for PWA support
+- Imported withPWAInit from next-pwa and configured with dest: "public", register: true, skipWaiting: true
+- Disabled PWA in development mode using disable: process.env.NODE_ENV === "development"
+- Files changed: next.config.ts
+- **Learnings for future iterations:**
+  - next-pwa v5 uses a curried function pattern: `withPWAInit(options)(nextConfig)`
+  - PWA options (dest, register, skipWaiting, disable) are passed to withPWAInit, not as a property of nextConfig
+  - Service worker will be generated in the public/ directory during build
+  - PWA is automatically disabled in development mode to avoid service worker conflicts during development
+---
+
+## [2026-01-12] - US-004
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added PWA meta tags to root layout (app/layout.tsx)
+- Added theme-color meta tag via metadata.themeColor (#e0f2fe)
+- Added apple-touch-icon meta tags via metadata.icons.apple
+- Added viewport meta tag via separate viewport export with PWA settings (device-width, initialScale: 1, maximumScale: 1, userScalable: false, viewportFit: cover)
+- Added manifest link tag via metadata.manifest
+- Added apple-mobile-web-app-* meta tags via metadata.other and metadata.appleWebApp
+- Files changed: app/layout.tsx
+- **Learnings for future iterations:**
+  - Next.js App Router uses Metadata API for most meta tags, but viewport must be exported separately as `export const viewport: Viewport`
+  - Viewport type is imported from "next" package
+  - Cannot use custom <head> tag in App Router - all meta tags must go through Metadata API or viewport export
+  - Apple-specific PWA tags can be set via metadata.appleWebApp and metadata.other
+  - Manifest link is automatically added when metadata.manifest is set
+---
+
+## [2026-01-12] - US-005
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created storage.ts utilities file at lib/utils/storage.ts
+- Defined ReviewState interface with reviewedIds, skippedIds, lastReviewDate, sessionStats fields
+- Defined NotificationSettings interface with enabled, schedule, lastNotificationDate fields
+- Implemented getReviewState() function with localStorage retrieval and validation
+- Implemented setReviewState() function for saving review state
+- Implemented getNotificationSettings() function with localStorage retrieval and validation
+- Implemented setNotificationSettings() function for saving notification settings
+- All functions include server-side safety checks (typeof window === "undefined")
+- Functions return default values if localStorage is unavailable or data is invalid
+- Files changed: lib/utils/storage.ts
+- **Learnings for future iterations:**
+  - localStorage utilities must check for window object to avoid SSR errors in Next.js
+  - Always validate parsed JSON data structure before using it
+  - Use descriptive localStorage keys with app prefix to avoid conflicts
+  - Return sensible defaults when localStorage is unavailable or corrupted
+  - Error handling with try-catch prevents crashes from localStorage quota exceeded errors
+---
+
+## [2026-01-12] - US-006
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added getRandomBookmarks function to lib/notion.ts
+- Function accepts count parameter and optional excludeIds array
+- Function uses getAllBookmarks() which leverages existing caching mechanism
+- Filters out excluded bookmark IDs before random selection
+- Returns array of random bookmarks without duplicates
+- Handles edge cases: empty bookmarks, no available bookmarks after filtering, count exceeding available bookmarks
+- Files changed: lib/notion.ts
+- **Learnings for future iterations:**
+  - getRandomBookmarks leverages existing getAllBookmarks() cache for efficiency
+  - Random selection uses Fisher-Yates style approach by removing selected items from pool
+  - Function respects excludeIds to prevent showing already-reviewed bookmarks in flashcard mode
+  - Actual count returned is min(requested count, available bookmarks) to handle edge cases gracefully
+---
+
+## [2026-01-12] - US-007
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created random bookmark API route at app/api/flashcards/random/route.ts
+- GET endpoint accepts optional excludeIds query parameter as comma-separated string
+- Parses excludeIds from query parameter and filters empty values
+- Returns single bookmark with remainingCount (number of bookmarks left after excluding reviewed ones)
+- Uses getRandomBookmarks(1, excludeIds) from lib/notion.ts to fetch random bookmark
+- Calculates remainingCount by getting all bookmarks and subtracting excluded count
+- Handles edge case when no bookmarks are available (returns null bookmark with remainingCount: 0)
+- Files changed: app/api/flashcards/random/route.ts
+- **Learnings for future iterations:**
+  - Next.js API routes use NextRequest and NextResponse from 'next/server'
+  - Query parameters are accessed via request.nextUrl.searchParams.get()
+  - Comma-separated query parameters should be split, trimmed, and filtered for empty values
+  - remainingCount represents how many bookmarks are available after excluding already reviewed ones
+  - API routes follow the pattern: app/api/[route]/route.ts for Next.js App Router
+---
+
+## [2026-01-12] - US-008
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created useFlashcards hook at lib/hooks/useFlashcards.ts
+- Defined state: currentBookmark (Bookmark | null), reviewedCount, skippedCount, loading, error
+- Implemented fetchRandomBookmark function that calls /api/flashcards/random with excludeIds from localStorage
+- Implemented markAsReviewed function that updates localStorage via setReviewState, increments reviewed count, and clears current bookmark
+- Implemented skipBookmark function that updates localStorage via setReviewState, increments skipped count, and clears current bookmark
+- Implemented resetSession function that clears localStorage and resets all state to defaults
+- Hook uses useState and useCallback for state management and memoization
+- Hook initializes counts from localStorage on mount using getReviewState()
+- Files changed: lib/hooks/useFlashcards.ts
+- **Learnings for future iterations:**
+  - React hooks must be marked with "use client" directive in Next.js App Router
+  - useCallback is important for memoizing functions that are passed as props to prevent unnecessary re-renders
+  - State initialization from localStorage should use lazy initialization (function form of useState) to avoid SSR issues
+  - When updating localStorage, always update both the IDs array and sessionStats to keep them in sync
+  - lastReviewDate should be stored as ISO date string (YYYY-MM-DD format) for consistency
+  - excludeIds should combine both reviewedIds and skippedIds to prevent showing any previously seen bookmarks
+---
+
+## [2026-01-12] - US-009
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created Flashcard component at components/Flashcard.tsx
+- Component displays bookmark details in a clean card layout with large bookmark name
+- Displays URL clearly with domain extraction
+- Shows type/status badges using pastel theme colors (cyan-100 for type, sky-100 for status)
+- Displays favicon using Google's favicon service with larger size (64px)
+- Added 'Visit Link' button that opens bookmark in new tab with external link icon
+- Styled with pastel theme (sky-100, slate-800) matching existing components
+- Card has minimum 60% viewport height on mobile (min-h-[60vh])
+- Uses rounded-2xl corners with subtle shadow (shadow-lg shadow-slate-200/50)
+- Component accepts Bookmark type from lib/notion.ts
+- Responsive design with mobile-first approach
+- Files changed: components/Flashcard.tsx
+- **Learnings for future iterations:**
+  - Flashcard component follows same favicon pattern as BookmarkCard and FeaturedCard (getDomainFromUrl, getFaviconUrl)
+  - Component uses "use client" directive since it's a client component
+  - Large text sizes (text-2xl to text-4xl) for bookmark name create emphasis
+  - Flexbox layout with flex-1 on bookmark name allows it to take available space
+  - Badges use same color scheme as other components (cyan-100 for type, sky-100 for status)
+  - Visit Link button uses full width on mobile (w-full) and auto width on larger screens (sm:w-auto)
+  - Component is designed to be wrapped by SwipeHandler in future iterations
+---
+
+## [2026-01-12] - US-010
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created FlashcardControls component at components/FlashcardControls.tsx
+- Skip button on left side with red pastel theme (red-50, red-700)
+- Mark as Reviewed button on right side with green pastel theme (green-50, green-700)
+- End Session button in center with slate theme
+- Open in new tab icon button in center with sky theme matching other components
+- All buttons are touch-friendly with minimum 44x44px size (min-h-[44px] on mobile, min-h-[48px] on larger screens)
+- Buttons use touch-manipulation class for better mobile interaction
+- Responsive design: text labels hidden on mobile (hidden sm:inline) to save space, icons always visible
+- Buttons include disabled state support for loading states
+- Uses Heroicons SVG icons matching existing component patterns
+- Files changed: components/FlashcardControls.tsx
+- **Learnings for future iterations:**
+  - FlashcardControls component accepts callback props (onSkip, onMarkReviewed, onEndSession, onOpenLink) for flexibility
+  - Component follows same pastel theme color scheme as other components (red-50/red-700 for skip, green-50/green-700 for reviewed)
+  - Touch-friendly buttons use min-h-[44px] for mobile (iOS/Android accessibility guidelines) and min-h-[48px] for larger screens
+  - Responsive text hiding (hidden sm:inline) allows icon-only buttons on mobile while showing labels on desktop
+  - Disabled prop allows parent components to disable buttons during loading or when no bookmark is available
+  - Component uses flex-1 on left/right buttons to make them equal width and prominent
+  - Center actions (open link, end session) are grouped together for better visual balance
+---
+
+## [2026-01-12] - US-011
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created SwipeHandler component at components/SwipeHandler.tsx
+- Uses react-swipeable library with useSwipeable hook
+- Left swipe (negative deltaX) triggers onSwipeLeft callback (skipBookmark)
+- Right swipe (positive deltaX) triggers onSwipeRight callback (markAsReviewed)
+- Visual feedback: card follows finger during swipe with translateX transform
+- Color change during swipe: red-50 background for left swipe (skip), green-50 for right swipe (reviewed)
+- Added slight rotation effect (0.1 * deltaX degrees) for visual polish
+- Haptic feedback on mobile devices using navigator.vibrate(50ms)
+- Minimum swipe distance of 50px (delta: 50) to prevent accidental swipes
+- Prevents scroll during swipe (preventScrollOnSwipe: true)
+- Only tracks touch events (trackMouse: false) for mobile-first experience
+- Smooth transition animation when swipe is released without completing action
+- Component accepts disabled prop to disable swipe functionality when needed
+- Files changed: components/SwipeHandler.tsx
+- **Learnings for future iterations:**
+  - react-swipeable's useSwipeable hook returns handlers that must be spread onto a div element
+  - useSwipeable handlers include onSwiping (during swipe), onSwipedLeft, onSwipedRight (completed swipes)
+  - onTouchEndOrOnMouseUp can be used to reset position if swipe wasn't completed
+  - deltaX from eventData represents horizontal swipe distance (negative = left, positive = right)
+  - Transform styles should disable transition during active swipe for smooth following, enable on release
+  - navigator.vibrate() is available on most mobile browsers for haptic feedback
+  - Component wraps children and applies transform/color changes, making it reusable for any swipeable content
+  - SwipeHandler will be used to wrap Flashcard component in the flashcards page (US-012)
+---
+
+## [2026-01-12] - US-012
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created flashcards page at app/flashcards/page.tsx
+- Page uses 'use client' directive for client-side functionality
+- Integrated useFlashcards hook for state management (currentBookmark, reviewedCount, skippedCount, loading, error)
+- Renders Flashcard component wrapped with SwipeHandler for mobile swipe gestures
+- Renders FlashcardControls component with skip, mark reviewed, end session, and open link buttons
+- Displays session stats (reviewed/skipped counts) in header with responsive design
+- Handles loading state with spinner and loading message
+- Handles error state with retry button and special handling for "No more bookmarks available" with "Start New Session" option
+- Clean, immersive full-screen layout with gradient background matching app theme
+- Automatically fetches next bookmark after marking as reviewed or skipping
+- End session button resets state and navigates back to home page
+- Open link button opens bookmark in new tab
+- Files changed: app/flashcards/page.tsx
+- **Learnings for future iterations:**
+  - Flashcards page follows same gradient background pattern as home page (from-slate-50 via-blue-50 to-cyan-50)
+  - useRouter from next/navigation is used for programmatic navigation in Next.js App Router
+  - After markAsReviewed or skipBookmark actions, fetchRandomBookmark should be called immediately to load next bookmark
+  - Error handling includes special case for "No more bookmarks available" with option to start new session
+  - Session stats are displayed in a fixed header that stays visible during scrolling
+  - Loading state only shows spinner when there's no currentBookmark to avoid flickering during transitions
+  - SwipeHandler wraps Flashcard component and handles both swipe gestures and button clicks through FlashcardControls
+  - Full-screen layout uses flex-col with flex-1 on main content area to center flashcard vertically
+---
+
+## [2026-01-12] - US-013
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created notification settings API route at app/api/settings/notifications/route.ts
+- Implemented GET endpoint that retrieves user's notification settings from server-side store
+- Implemented POST endpoint that saves notification settings with validation
+- Added basic API key validation supporting both Authorization Bearer token and X-API-Key header
+- Validates NotificationSettings structure (enabled boolean, schedule array, lastNotificationDate string)
+- Validates schedule times using regex pattern for HH:MM format (e.g., "09:00", "14:00")
+- Uses in-memory Map for server-side storage (can be replaced with database in production)
+- Returns default settings (enabled: false, schedule: [], lastNotificationDate: '') when no settings found
+- Handles JSON parse errors and invalid request formats with appropriate error responses
+- Files changed: app/api/settings/notifications/route.ts
+- **Learnings for future iterations:**
+  - API key validation checks both Authorization header (Bearer token) and X-API-Key header for flexibility
+  - API key is stored in environment variable API_KEY (separate from NOTION_API_KEY)
+  - Server-side storage uses Map<string, NotificationSettings> keyed by user ID (currently defaults to 'default-user')
+  - Schedule validation uses regex /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/ to ensure valid 24-hour time format
+  - GET endpoint returns 401 if API key is invalid, 500 on server errors
+  - POST endpoint returns 400 for invalid request format, 401 for invalid API key, 500 on server errors
+  - In-memory storage is suitable for MVP but should be replaced with persistent storage (database) for production
+  - User ID extraction is currently hardcoded to 'default-user' - should be extracted from JWT/session in production
+---
+
+## [2026-01-12] - US-014
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created notification schedule API route at app/api/notifications/schedule/route.ts
+- Implemented GET endpoint that returns next scheduled notification time and random bookmark preview
+- Created shared server-side storage module at lib/utils/server-storage.ts to ensure both notification routes use the same store
+- Updated app/api/settings/notifications/route.ts to use shared server storage
+- Next notification time calculation finds the next scheduled time today, or first time tomorrow if all times have passed
+- Returns null for nextNotificationTime if notifications are disabled or no schedule is set
+- Always returns a random bookmark preview even if notifications are disabled
+- Files changed: app/api/notifications/schedule/route.ts, lib/utils/server-storage.ts, app/api/settings/notifications/route.ts
+- **Learnings for future iterations:**
+  - Created shared server-storage.ts module to avoid duplicate Map instances across API routes
+  - Server-side storage must be shared across routes that need to access the same data
+  - Next notification time calculation converts schedule times to minutes since midnight for easy comparison
+  - Schedule times are sorted ascending to find the next available time efficiently
+  - If no time is found today, the first scheduled time tomorrow is returned
+  - API key validation follows same pattern as settings route (Bearer token or X-API-Key header)
+  - Random bookmark preview uses getRandomBookmarks(1) from lib/notion.ts
+  - Response format: { nextNotificationTime: string | null, bookmarkPreview: Bookmark | null }
+---
+
+## [2026-01-12] - US-015
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created useNotifications hook at lib/hooks/useNotifications.ts
+- Implemented requestNotificationPermission function that requests browser notification permission using Notification.requestPermission()
+- Implemented scheduleNotifications function that schedules notifications for each time in the schedule using setTimeout
+- Implemented cancelNotifications function that clears all scheduled notification timeouts
+- Implemented checkPermissionStatus function that checks and returns current Notification.permission status
+- Hook manages permission state, loading state, and error state
+- Uses browser Notification API to show notifications with icon, badge, and click handler to open /flashcards
+- Schedules notifications using setTimeout with calculated delays based on schedule times
+- Fetches bookmark preview from /api/notifications/schedule before scheduling
+- Handles edge cases: browser not supporting notifications, permission denied, schedule times that have passed today
+- Files changed: lib/hooks/useNotifications.ts
+- **Learnings for future iterations:**
+  - React hooks must be marked with "use client" directive in Next.js App Router
+  - Browser Notification API requires permission to be granted before showing notifications
+  - Notification.requestPermission() returns a Promise that resolves to "granted", "denied", or "default"
+  - setTimeout is used for scheduling notifications - for background notifications, Service Worker will be needed (US-019/020)
+  - Scheduled timeouts are stored in a Map to allow cancellation
+  - Notification.onclick handler can navigate to specific pages when notification is clicked
+  - Notifications auto-close after 5 seconds to avoid cluttering the notification center
+  - scheduleNotifications clears existing scheduled notifications before scheduling new ones to avoid duplicates
+  - Hook follows same pattern as useFlashcards with useState, useCallback, and useEffect for state management
+  - API routes may require authentication in production - client-side API key handling should be done securely (not exposed in client code)
+---
+
+## [2026-01-12] - US-016
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created NotificationSettings component at components/NotificationSettings.tsx
+- Implemented time picker using HTML5 time input for custom schedule (24-hour format)
+- Added toggle switch for enabling/disabling notifications with visual feedback
+- Implemented preview notification button that requests permission if needed and shows a test notification
+- Implemented save settings button that saves to localStorage and schedules notifications via useNotifications hook
+- Displays current saved settings showing enabled status and scheduled times
+- Component uses pastel theme matching existing components (sky-100, green-50, red-50, slate colors)
+- Integrated with useNotifications hook for permission management and notification scheduling
+- Handles permission denied state with helpful error message
+- Validates time format (HH:MM) before adding to schedule
+- Prevents duplicate times in schedule
+- Shows success/error messages for save operations
+- Responsive design with touch-friendly buttons (min-h-[44px])
+- Files changed: components/NotificationSettings.tsx
+- **Learnings for future iterations:**
+  - HTML5 time input provides native time picker UI but returns value in HH:MM format (24-hour)
+  - Toggle switch uses peer-checked: pseudo-class with Tailwind for styling
+  - NotificationSettings component integrates with useNotifications hook for permission and scheduling
+  - Component saves to localStorage immediately but also schedules notifications when enabled
+  - Preview notification fetches random bookmark from /api/notifications/schedule endpoint
+  - Save button is disabled when notifications are enabled but no schedule times are set
+  - Component loads settings from localStorage on mount to display current state
+  - Error states are shown inline with red-50 background matching error pattern from other components
+  - Success message auto-dismisses after 3 seconds for better UX
+---
+
+## [2026-01-12] - US-017
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created settings page at app/settings/page.tsx
+- Page uses 'use client' directive for client-side functionality
+- Renders NotificationSettings component within a clean, accessible layout
+- Uses same gradient background pattern as home page (from-slate-50 via-blue-50 to-cyan-50)
+- Includes header with settings icon and descriptive subtitle
+- Wraps NotificationSettings component in white card with backdrop blur and shadow matching app theme
+- Responsive container with max-width-4xl for optimal reading width
+- Files changed: app/settings/page.tsx
+- **Learnings for future iterations:**
+  - Settings page follows same layout pattern as home page (gradient background, container, header, card wrapper)
+  - Uses settings/gear icon from Heroicons matching the visual style of other pages
+  - NotificationSettings component is imported as default export and rendered directly
+  - Card wrapper uses bg-white/90 backdrop-blur-sm for subtle transparency effect matching other pages
+  - Container uses same responsive padding classes (px-5 py-8 sm:px-4 sm:py-6 md:px-6 lg:px-8 lg:py-8) as home page
+  - Page is accessible at /settings route in Next.js App Router
+---
+
+## [2026-01-12] - US-018
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added navigation buttons to home page header (Flashcards and Settings)
+- Flashcards button links to /flashcards route
+- Settings button links to /settings route
+- Buttons use pastel theme styling (sky-100 background, sky-700 text) matching existing components
+- Buttons are touch-friendly with minimum 44px height on mobile, 48px on larger screens
+- Responsive design: icon-only on mobile (hidden sm:inline for text labels)
+- Buttons positioned in header using flexbox layout (flex-col on mobile, flex-row on larger screens)
+- Used Next.js Link component for client-side navigation
+- Added appropriate icons (cards icon for Flashcards, gear icon for Settings) from Heroicons
+- Files changed: app/page.tsx
+- **Learnings for future iterations:**
+  - Next.js Link component provides client-side navigation without full page reload
+  - Navigation buttons should be placed in header for easy access
+  - Responsive button design: hide text labels on mobile (hidden sm:inline) to save space while keeping icons visible
+  - Header layout uses flex-col on mobile and flex-row on larger screens for optimal responsive design
+  - Navigation buttons follow same styling pattern as other buttons (sky-100/700 pastel theme, rounded-xl, hover states)
+  - Touch-friendly buttons require min-h-[44px] on mobile per accessibility guidelines
+---
+
+## [2026-01-12] - US-019
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created PWA service worker implementation at lib/pwa/service-worker.ts (documentation/reference file)
+- Configured runtime caching strategies in next.config.ts using next-pwa's runtimeCaching option
+- Implemented NetworkFirst strategy for API routes (/api/bookmarks, /api/flashcards/random) with 1-hour cache expiration
+- Implemented CacheFirst strategy for bookmark pages (/flashcards, /settings) with 24-hour cache expiration
+- Implemented CacheFirst strategy for static assets (_next/static) with 1-year cache expiration
+- Created ServiceWorkerRegister component at lib/pwa/service-worker-register.tsx for update handling
+- Component listens for service worker updates and shows update notification when new version is available
+- Component handles service worker activation and page reload for updates
+- Added ServiceWorkerRegister component to root layout (app/layout.tsx)
+- Service worker is automatically registered by next-pwa when register: true is set in config
+- Files changed: lib/pwa/service-worker.ts, lib/pwa/service-worker-register.tsx, app/layout.tsx, next.config.ts
+- **Learnings for future iterations:**
+  - next-pwa v5 automatically generates service worker based on runtimeCaching configuration in next.config.ts
+  - Service worker file at lib/pwa/service-worker.ts serves as documentation/reference, actual SW is generated at build time
+  - runtimeCaching uses Workbox strategies: NetworkFirst for dynamic content, CacheFirst for static content
+  - NetworkFirst strategy tries network first, falls back to cache - good for API routes that need fresh data but should work offline
+  - CacheFirst strategy tries cache first, falls back to network - good for static pages and assets
+  - Service worker registration is handled automatically by next-pwa, but we can add custom update handling via client component
+  - ServiceWorkerRegister component waits for navigator.serviceWorker.ready to ensure SW is registered before setting up listeners
+  - Update notification shows when new service worker is installed and waiting (installed state with existing controller)
+  - SKIP_WAITING message can be sent to waiting service worker to activate it immediately
+  - Controller change event fires when new service worker takes control, good time to reload page
+  - Cleanup function in useEffect must properly clear intervals to prevent memory leaks
+---
+
+## [2026-01-12] - US-020
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created custom service worker source file at lib/pwa/sw.js with notification handling
+- Updated next.config.ts to use swSrc option pointing to custom service worker source
+- Enhanced useNotifications hook to communicate with service worker via postMessage
+- Implemented notification click handling in service worker to open /flashcards page
+- Added background sync registration for notifications (works when app is closed)
+- Service worker fetches random bookmark from /api/notifications/schedule when notification triggers
+- Implemented scheduling of next notification after current one via message passing
+- Service worker handles push events, sync events, and periodic sync events for background notifications
+- Files changed: lib/pwa/sw.js, next.config.ts, lib/hooks/useNotifications.ts
+- **Learnings for future iterations:**
+  - next-pwa v5 uses swSrc option to provide custom service worker source file that Workbox processes
+  - Service worker can handle notification clicks to navigate users to specific pages
+  - Background Sync API allows scheduling notifications even when app is closed (requires user interaction to register)
+  - Service worker and client communicate via postMessage API for coordination
+  - Notification click handler uses clients.matchAll() to find existing windows or open new ones
+  - Service worker can fetch from API routes but authentication headers may need special handling
+  - Scheduling notifications in service worker allows them to work in background, but client-side setTimeout still needed for when app is open
+  - Service worker message handlers should use event.waitUntil() for async operations to keep service worker alive
+---
