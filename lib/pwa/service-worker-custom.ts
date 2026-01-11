@@ -13,6 +13,7 @@
 
 declare const self: ServiceWorkerGlobalScope;
 declare const workbox: any;
+declare const clients: Clients;
 
 // Import Workbox (will be available at runtime)
 import { precacheAndRoute } from 'workbox-precaching';
@@ -42,7 +43,7 @@ async function getNotificationSettings(): Promise<NotificationSettings | null> {
   try {
     // Try to get from IndexedDB first
     const db = await openDB();
-    const settings = await db.get('settings', NOTIFICATION_SETTINGS_KEY);
+    const settings = await getFromDB(db, 'settings', NOTIFICATION_SETTINGS_KEY);
     if (settings) {
       return settings;
     }
@@ -52,6 +53,34 @@ async function getNotificationSettings(): Promise<NotificationSettings | null> {
 
   // Fallback: try to get from cache or return null
   return null;
+}
+
+/**
+ * Get value from IndexedDB
+ */
+async function getFromDB<T>(db: IDBDatabase, storeName: string, key: string): Promise<T | null> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(storeName, 'readonly');
+    const store = transaction.objectStore(storeName);
+    const request = store.get(key);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result || null);
+  });
+}
+
+/**
+ * Put value to IndexedDB
+ */
+async function putToDB<T>(db: IDBDatabase, storeName: string, value: T, key?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(storeName, 'readwrite');
+    const store = transaction.objectStore(storeName);
+    const request = key ? store.put(value, key) : store.put(value);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
 }
 
 /**
@@ -203,7 +232,7 @@ async function scheduleNextNotification(): Promise<void> {
 
   try {
     const db = await openDB();
-    await db.put('notifications', scheduledNotification);
+    await putToDB(db, 'notifications', scheduledNotification);
   } catch (error) {
     console.error('[SW] Failed to store scheduled notification:', error);
   }
@@ -321,7 +350,7 @@ self.addEventListener('message', (event: MessageEvent) => {
         const settings = event.data.settings;
         try {
           const db = await openDB();
-          await db.put('settings', settings, NOTIFICATION_SETTINGS_KEY);
+          await putToDB(db, 'settings', settings, NOTIFICATION_SETTINGS_KEY);
           // Reschedule notifications with new settings
           await scheduleNextNotification();
         } catch (error) {
