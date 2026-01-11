@@ -5,8 +5,14 @@ import { getServerNotificationSettings } from '@/lib/utils/server-storage';
 /**
  * Validate API key from request headers
  * Returns true if valid, false otherwise
+ * Note: API key is optional for local development
  */
 function validateApiKey(request: NextRequest): boolean {
+  // If no API_KEY is set in environment, skip validation (for local development)
+  if (!process.env.API_KEY) {
+    return true;
+  }
+
   // Check for API key in Authorization header (Bearer token)
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
